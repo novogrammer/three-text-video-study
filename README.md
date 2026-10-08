@@ -6,7 +6,7 @@
 
 ## 現在の状態
 
-Vite・TypeScript・Sassの開発環境を用意した段階です。テキスト描画、3Dシーン、動画書き出しは未実装です。
+Cubeが浮遊・回転するシーンを実装しています。テキスト描画と動画書き出しは未実装です。
 
 ## 開発方法
 
@@ -31,6 +31,10 @@ npm run dev
 | --- | --- |
 | `index.html` | ページのHTML構造 |
 | `src/main.ts` | TypeScriptのエントリーポイント |
+| `src/app/Application.ts` | Renderer、描画ループ、リサイズの管理 |
+| `src/scenes/CubeScene.ts` | 最初のCubeシーン |
+| `src/scenes/StudyScene.ts` | シーンの共通インターフェース |
+| `src/animation/timeline.ts` | 時刻からループ進行値への変換 |
 | `src/style.scss` | スタイルのエントリーポイント |
 | `docs/spec.md` | 共通仕様と初期プロトタイプの要件 |
 | `AGENTS.md` | 実装規約と作業上の制約 |
