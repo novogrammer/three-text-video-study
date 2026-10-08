@@ -179,7 +179,7 @@ export class Application {
 
     try {
       this.activeScene.update(time)
-      this.renderer.render(this.activeScene.scene, this.activeScene.camera)
+      this.renderer.render(this.activeScene)
       if (request) {
         // readbackが完了するまで、このRenderTargetへの次の描画を止める。
         this.frameReadback = this.renderer.readFrame()

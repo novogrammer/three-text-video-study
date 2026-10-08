@@ -8,7 +8,7 @@ import {
   WebGPURenderer,
 } from 'three/webgpu'
 import { sRGBTransferEOTF, texture, vec3 } from 'three/tsl'
-import type { Camera, Scene } from 'three/webgpu'
+import type { StudyScene } from '../scenes/StudyScene'
 import { packRgbaRows } from './PixelFrame'
 import type { PixelFrame } from './PixelFrame'
 
@@ -47,11 +47,11 @@ export class SceneRenderer {
   }
 
   /** setAnimationLoopのコールバック内から呼ぶ。 */
-  render(scene: Scene, camera: Camera): void {
+  render(scene: StudyScene): void {
     // Canvasと同じ色変換・アンチエイリアスを適用した出力を保持する。
     this.renderer.setOutputRenderTarget(this.frameTarget)
     try {
-      this.renderer.render(scene, camera)
+      scene.render(this.renderer)
     } finally {
       this.renderer.setRenderTarget(null)
       this.renderer.setOutputRenderTarget(null)

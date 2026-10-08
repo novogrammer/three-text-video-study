@@ -233,6 +233,10 @@ Webフォント読み込み、日本語改行、Canvas描画を担当する。
 
 CanvasTextureを使用したThree.jsの各表現を担当する。
 
+各シーンは `StudyScene` を実装し、オブジェクト、カメラ、ライト、時刻による状態更新と `render(renderer)` による描画を担当する。シーン内部の描画パスやエフェクトも各シーン側へ置く。
+
+Rendererの生成、描画ループ、出力解像度、最終出力先のRenderTarget、プレビュー表示とピクセル取得は共通側で管理する。共通側は `setAnimationLoop()` 内でシーンの描画を呼び出す。シーンが中間RenderTargetを使う場合は最終出力先へ戻して出力し、変更したRendererの設定も復元する。最終出力は共通の色空間設定に従う。
+
 シーン固有の仕様は各scene側へ置く。
 
 ### animation

@@ -10,12 +10,12 @@ import {
   Scene,
 } from 'three/webgpu'
 import type { StudyScene } from './StudyScene'
-import type { Texture } from 'three/webgpu'
+import type { Texture, WebGPURenderer } from 'three/webgpu'
 import { getLoopProgress } from '../animation/timeline'
 
 export class CubeScene implements StudyScene {
-  readonly scene = new Scene()
-  readonly camera = new PerspectiveCamera(45, 1, 0.1, 100)
+  private readonly scene = new Scene()
+  private readonly camera = new PerspectiveCamera(45, 1, 0.1, 100)
 
   readonly duration = 8
   private readonly geometry = new BoxGeometry(1.4, 1.4, 1.4)
@@ -51,6 +51,10 @@ export class CubeScene implements StudyScene {
   setTexture(texture: Texture): void {
     this.material.map = texture
     this.material.needsUpdate = true
+  }
+
+  render(renderer: WebGPURenderer): void {
+    renderer.render(this.scene, this.camera)
   }
 
   resize(width: number, height: number): void {
