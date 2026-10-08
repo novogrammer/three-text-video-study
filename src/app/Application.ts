@@ -1,6 +1,4 @@
 import { SceneRenderer } from '../rendering/SceneRenderer'
-import { CanvasTexture, SRGBColorSpace } from 'three/webgpu'
-import { TextCanvas } from '../text/canvas'
 import type { PixelFrame } from '../rendering/PixelFrame'
 import type { StudyScene } from '../scenes/StudyScene'
 import { VideoExporter } from '../video/VideoExporter'
@@ -43,8 +41,6 @@ export class Application {
   private exportController: AbortController | null = null
   private downloadUrl: string | null = null
   private backend = ''
-  private readonly textCanvas = new TextCanvas()
-  private textTexture: CanvasTexture | null = null
   private appliedText: string | null = null
   private updatingText = false
   private textJob: Promise<boolean> | null = null
@@ -98,7 +94,7 @@ export class Application {
     this.updatingText = true
     this.syncControls()
     this.elements.status.textContent = 'テキストを準備しています…'
-    const job = this.createTextTexture(text).finally(() => {
+    const job = this.applySceneText(text).finally(() => {
       this.updatingText = false
       this.textJob = null
       this.syncControls()
@@ -107,29 +103,10 @@ export class Application {
     return job
   }
 
-  private async createTextTexture(text: string): Promise<boolean> {
+  private async applySceneText(text: string): Promise<boolean> {
     try {
-      const canvas = await this.textCanvas.draw(text, {
-        width: 512,
-        height: 512,
-        fontFamily: 'Noto Sans JP',
-        fontWeight: 700,
-        fontSize: 40,
-        minFontSize: 16,
-        lineHeight: 1.6,
-        letterSpacing: 1,
-        textAlign: 'left',
-        color: '#17211d',
-        background: '#ffffff',
-        padding: 44,
-        pixelRatio: Math.min(Math.max(window.devicePixelRatio, 1), 2),
-      })
+      await this.activeScene.setText(text)
       if (this.disposed) return false
-      const texture = new CanvasTexture(canvas)
-      texture.colorSpace = SRGBColorSpace
-      this.activeScene.setTexture(texture)
-      this.textTexture?.dispose()
-      this.textTexture = texture
       this.appliedText = text
       this.showPreviewStatus()
       return true
@@ -279,7 +256,6 @@ export class Application {
     // GPU読み出し中のリソースを先に破棄しない。
     if (this.frameReadback) await this.frameReadback
     this.activeScene.dispose()
-    this.textTexture?.dispose()
     if (this.initialized) await this.renderer.dispose()
   }
 }

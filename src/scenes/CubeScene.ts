@@ -1,5 +1,6 @@
 import {
   BoxGeometry,
+  CanvasTexture,
   Color,
   DirectionalLight,
   GridHelper,
@@ -8,9 +9,11 @@ import {
   MeshStandardMaterial,
   PerspectiveCamera,
   Scene,
+  SRGBColorSpace,
 } from 'three/webgpu'
 import type { StudyScene } from './StudyScene'
-import type { Texture, WebGPURenderer } from 'three/webgpu'
+import type { WebGPURenderer } from 'three/webgpu'
+import { TextCanvas } from '../text/canvas'
 import { getLoopProgress } from '../animation/timeline'
 
 export class CubeScene implements StudyScene {
@@ -18,6 +21,10 @@ export class CubeScene implements StudyScene {
   private readonly camera = new PerspectiveCamera(45, 1, 0.1, 100)
 
   readonly duration = 8
+  private readonly textCanvas = new TextCanvas()
+  private textTexture: CanvasTexture | null = null
+  private textRevision = 0
+  private disposed = false
   private readonly geometry = new BoxGeometry(1.4, 1.4, 1.4)
   private readonly material = new MeshStandardMaterial({
     color: 0x68cf91,
@@ -48,9 +55,32 @@ export class CubeScene implements StudyScene {
     this.cube.rotation.set(0.2 + Math.sin(angle) * 0.15, angle, 0.1)
   }
 
-  setTexture(texture: Texture): void {
+  async setText(text: string): Promise<void> {
+    if (this.disposed) throw new Error('破棄されたシーンにはテキストを反映できません。')
+    const revision = ++this.textRevision
+    const canvas = await this.textCanvas.draw(text, {
+      width: 512,
+      height: 512,
+      fontFamily: 'Noto Sans JP',
+      fontWeight: 700,
+      fontSize: 40,
+      minFontSize: 16,
+      lineHeight: 1.6,
+      letterSpacing: 1,
+      textAlign: 'left',
+      color: '#17211d',
+      background: '#ffffff',
+      padding: 44,
+      pixelRatio: Math.min(Math.max(window.devicePixelRatio, 1), 2),
+    })
+    // 読み込み中の破棄や新しい入力を、古い結果で上書きしない。
+    if (this.disposed || revision !== this.textRevision) return
+    const texture = new CanvasTexture(canvas)
+    texture.colorSpace = SRGBColorSpace
     this.material.map = texture
     this.material.needsUpdate = true
+    this.textTexture?.dispose()
+    this.textTexture = texture
   }
 
   render(renderer: WebGPURenderer): void {
@@ -64,6 +94,12 @@ export class CubeScene implements StudyScene {
   }
 
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
+    this.textRevision++
+    this.material.map = null
+    this.textTexture?.dispose()
+    this.textTexture = null
     this.geometry.dispose()
     this.material.dispose()
     this.grid.dispose()
