@@ -2,6 +2,8 @@
 
 日本語テキストを使った3D表現と動画生成を研究する習作プロジェクトです。
 
+公開ページ: [three-text-video-study](https://novogrammer.github.io/three-text-video-study/)
+
 目的・技術構成・描画や動画書き出しの要件は [共通仕様](docs/spec.md) を参照してください。実装・作業時のルールは [AGENTS.md](AGENTS.md) にまとめています。
 
 ## 現在の状態

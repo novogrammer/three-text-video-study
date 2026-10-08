@@ -74,6 +74,15 @@ textarea:disabled {
     text-decoration: none;
   }
 
+  &__repository {
+    color: #a4abb0;
+    text-underline-offset: 3px;
+
+    &:hover {
+      color: #edece6;
+    }
+  }
+
   &__footer {
     display: flex;
     justify-content: space-between;
