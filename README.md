@@ -33,7 +33,7 @@ npm run dev
 
 | ファイル | 役割 |
 | --- | --- |
-| `index.html` | ページのHTML構造 |
+| `src/index.html` | ページのHTML構造 |
 | `src/main.ts` | TypeScriptのエントリーポイント |
 | `src/app/Application.ts` | Renderer、描画ループ、設定UIの管理 |
 | `src/scenes/CubeScene.ts` | 最初のCubeシーン |
