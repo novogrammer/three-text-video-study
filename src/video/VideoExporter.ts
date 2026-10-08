@@ -1,6 +1,7 @@
 import {
   BufferTarget,
-  CanvasSource,
+  VideoSample,
+  VideoSampleSource,
   Mp4OutputFormat,
   Output,
   QUALITY_HIGH,
@@ -9,13 +10,13 @@ import {
   canEncodeVideo,
 } from 'mediabunny'
 import type { VideoSettings } from './settings'
+import type { PixelFrame } from '../rendering/PixelFrame'
 
-/** 描画ループ内で指定時刻を描画し、その直後にcaptureを呼ぶ。 */
-export type CaptureFrame = (time: number, capture: () => Promise<void>) => Promise<void>
+/** 指定時刻を描画して、独立したピクセルデータを取得する。 */
+export type CaptureFrame = (time: number) => Promise<PixelFrame>
 
 export class VideoExporter {
   async export(
-    canvas: HTMLCanvasElement,
     settings: VideoSettings,
     duration: number,
     captureFrame: CaptureFrame,
@@ -49,7 +50,7 @@ export class VideoExporter {
     }
 
     const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() })
-    const source = new CanvasSource(canvas, { codec: 'avc', quality })
+    const source = new VideoSampleSource({ codec: 'avc', quality })
     output.addVideoTrack(source, { frameRate: settings.frameRate })
 
     try {
@@ -57,8 +58,25 @@ export class VideoExporter {
       for (let frame = 0; frame < frameCount; frame++) {
         signal.throwIfAborted()
         const time = frame / settings.frameRate
-        // Canvas取得を描画直後に行い、エンコーダーが次のframeを受け取れるまで待つ。
-        await captureFrame(time, () => source.add(time, 1 / settings.frameRate))
+        const pixels = await captureFrame(time)
+        signal.throwIfAborted()
+        if (pixels.width !== settings.resolution || pixels.height !== settings.resolution
+          || pixels.pixels.length !== pixels.width * pixels.height * 4) {
+          throw new Error('取得したフレームが書き出し設定と一致しません。')
+        }
+        const sample = new VideoSample(pixels.pixels, {
+          format: 'RGBA',
+          codedWidth: pixels.width,
+          codedHeight: pixels.height,
+          timestamp: time,
+          duration: 1 / settings.frameRate,
+          colorSpace: { primaries: 'bt709', transfer: 'iec61966-2-1', matrix: 'rgb', fullRange: true },
+        })
+        try {
+          await source.add(sample)
+        } finally {
+          sample.close()
+        }
         onProgress(frame + 1, frameCount)
       }
       signal.throwIfAborted()

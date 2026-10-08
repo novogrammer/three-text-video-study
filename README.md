@@ -37,6 +37,8 @@ npm run dev
 | `src/scenes/CubeScene.ts` | 最初のCubeシーン |
 | `src/scenes/StudyScene.ts` | シーンの共通インターフェース |
 | `src/animation/timeline.ts` | 時刻からループ進行値への変換 |
+| `src/rendering/SceneRenderer.ts` | 共通の描画結果の保持、プレビュー表示、フレーム取得 |
+| `src/rendering/PixelFrame.ts` | RGBAピクセルのデータ形式と行の整形 |
 | `src/video/VideoExporter.ts` | 固定フレームレートのMP4生成 |
 | `src/video/settings.ts` | 書き出し設定の型 |
 | `src/style.scss` | スタイルのエントリーポイント |

@@ -1,4 +1,5 @@
-import { WebGPURenderer } from 'three/webgpu'
+import { SceneRenderer } from '../rendering/SceneRenderer'
+import type { PixelFrame } from '../rendering/PixelFrame'
 import type { StudyScene } from '../scenes/StudyScene'
 import { VideoExporter } from '../video/VideoExporter'
 import type { CaptureFrame } from '../video/VideoExporter'
@@ -19,13 +20,12 @@ export interface ApplicationElements {
 
 interface FrameRequest {
   time: number
-  capture: () => Promise<void>
-  resolve: () => void
+  resolve: (frame: PixelFrame) => void
   reject: (error: unknown) => void
 }
 
 export class Application {
-  private readonly renderer: WebGPURenderer
+  private readonly renderer: SceneRenderer
   private readonly elements: ApplicationElements
   private readonly activeScene: StudyScene
   private readonly exporter = new VideoExporter()
@@ -34,12 +34,13 @@ export class Application {
   private disposed = false
   private exporting = false
   private pendingFrame: FrameRequest | null = null
+  private frameReadback: Promise<void> | null = null
   private exportController: AbortController | null = null
   private downloadUrl: string | null = null
   private backend = ''
 
   constructor(elements: ApplicationElements, scene: StudyScene) {
-    this.renderer = new WebGPURenderer({ canvas: elements.canvas, antialias: true })
+    this.renderer = new SceneRenderer(elements.canvas)
     this.elements = elements
     this.activeScene = scene
   }
@@ -59,7 +60,7 @@ export class Application {
     this.elements.exportButton.addEventListener('click', this.exportVideo)
     await this.renderer.setAnimationLoop(this.render)
 
-    this.backend = 'isWebGPUBackend' in this.renderer.backend ? 'WebGPU' : 'WebGL 2'
+    this.backend = this.renderer.backendName
     this.elements.exportButton.disabled = false
     this.showPreviewStatus()
   }
@@ -85,14 +86,13 @@ export class Application {
     if (this.disposed || this.exporting) return
     const { resolution } = this.readSettings()
     // 出力の実ピクセル数を固定し、画面へのフィットはCSSに任せる。
-    this.renderer.setPixelRatio(1)
-    this.renderer.setSize(resolution, resolution, false)
+    this.renderer.setResolution(resolution)
     this.activeScene.resize(resolution, resolution)
     if (this.backend) this.showPreviewStatus()
   }
 
   private readonly render = (timestamp: number): void => {
-    if (this.disposed) return
+    if (this.disposed || this.frameReadback) return
     const request = this.pendingFrame
     if (this.exporting && !request) return
     this.pendingFrame = null
@@ -102,8 +102,12 @@ export class Application {
     try {
       this.activeScene.update(time)
       this.renderer.render(this.activeScene.scene, this.activeScene.camera)
-      // 同じコールバック内でCanvasを取得し、次の描画による上書きを防ぐ。
-      if (request) void request.capture().then(request.resolve, request.reject)
+      if (request) {
+        // readbackが完了するまで、このRenderTargetへの次の描画を止める。
+        this.frameReadback = this.renderer.readFrame()
+          .then(request.resolve, request.reject)
+          .finally(() => { this.frameReadback = null })
+      }
     } catch (error) {
       console.error(error)
       if (request) {
@@ -115,12 +119,12 @@ export class Application {
     }
   }
 
-  private readonly captureFrame: CaptureFrame = (time, capture) => {
+  private readonly captureFrame: CaptureFrame = (time) => {
     if (this.disposed || !this.exporting || this.pendingFrame) {
       return Promise.reject(new Error('書き出し用のフレームを要求できません。'))
     }
-    return new Promise<void>((resolve, reject) => {
-      this.pendingFrame = { time, capture, resolve, reject }
+    return new Promise<PixelFrame>((resolve, reject) => {
+      this.pendingFrame = { time, resolve, reject }
     })
   }
 
@@ -138,7 +142,6 @@ export class Application {
     try {
       const settings = this.readSettings()
       const blob = await this.exporter.export(
-        this.elements.canvas,
         settings,
         this.activeScene.duration,
         this.captureFrame,
@@ -191,6 +194,8 @@ export class Application {
     this.elements.video.removeAttribute('src')
     this.elements.video.load()
     if (this.initialized) await this.renderer.setAnimationLoop(null)
+    // GPU読み出し中のリソースを先に破棄しない。
+    if (this.frameReadback) await this.frameReadback
     this.activeScene.dispose()
     if (this.initialized) await this.renderer.dispose()
   }

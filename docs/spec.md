@@ -176,10 +176,14 @@ frame 2   → time = 2 / 60
 * 書き出し対象のframe index
 * そのframeに対応するtime
 * render完了
-* Canvasのframe取得
+* RenderTargetからのframe取得
 * Mediabunnyへの入力
 
 を同期させる仕組みを設計する。
+
+描画結果はRenderTargetへ保持し、プレビューも同じ描画結果を表示する。
+
+書き出しでは表示用Canvasを直接取得せず、RenderTargetから非同期でRGBAピクセルを読み出してMediabunnyへ渡す。ピクセル取得とMediabunnyへの入力が完了してから次のframeへ進む。
 
 詳細な実装方法はプロトタイプを作りながら検証する。
 
