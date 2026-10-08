@@ -10,6 +10,7 @@ import {
   Scene,
 } from 'three/webgpu'
 import type { StudyScene } from './StudyScene'
+import type { Texture } from 'three/webgpu'
 import { getLoopProgress } from '../animation/timeline'
 
 export class CubeScene implements StudyScene {
@@ -45,6 +46,11 @@ export class CubeScene implements StudyScene {
     const angle = getLoopProgress(time, this.duration) * Math.PI * 2
     this.cube.position.y = Math.sin(angle) * 0.25
     this.cube.rotation.set(0.2 + Math.sin(angle) * 0.15, angle, 0.1)
+  }
+
+  setTexture(texture: Texture): void {
+    this.material.map = texture
+    this.material.needsUpdate = true
   }
 
   resize(width: number, height: number): void {

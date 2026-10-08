@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#111315" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet" />
     <title>three-text-video-study</title>
   </head>
   <body>
@@ -27,6 +30,13 @@
             <h2 class="panel__title">シーンを、短いループ動画に。</h2>
             <p class="panel__description">サイズと画質を選び、MP4で保存できます。</p>
           </div>
+          <fieldset class="text-editor" data-text-settings disabled>
+            <legend class="text-editor__legend">テキスト</legend>
+            <label class="text-editor__label" for="scene-text">Cubeに表示する文章</label>
+            <textarea class="text-editor__input" id="scene-text" data-text rows="5" maxlength="500" spellcheck="false" aria-describedby="text-hint">吾輩は猫である。名前はまだ無い。どこで生れたかとんと見当がつかぬ。</textarea>
+            <p class="text-editor__hint" id="text-hint">自然な位置で自動改行します。入力した改行も反映されます。</p>
+            <button class="button button--subtle" type="button" data-apply-text>テキストを反映</button>
+          </fieldset>
           <fieldset class="export-settings" data-settings>
             <legend class="export-settings__legend">書き出し設定</legend>
             <div class="export-settings__fields">

@@ -20,6 +20,9 @@ const application = new Application({
   download: getElement<HTMLAnchorElement>('[data-download]'),
   result: getElement<HTMLDetailsElement>('[data-result]'),
   video: getElement<HTMLVideoElement>('[data-video]'),
+  textSettings: getElement<HTMLFieldSetElement>('[data-text-settings]'),
+  text: getElement<HTMLTextAreaElement>('[data-text]'),
+  applyTextButton: getElement<HTMLButtonElement>('[data-apply-text]'),
 }, new CubeScene())
 
 void application.start().catch((error: unknown) => {

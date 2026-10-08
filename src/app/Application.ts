@@ -1,4 +1,6 @@
 import { SceneRenderer } from '../rendering/SceneRenderer'
+import { CanvasTexture, SRGBColorSpace } from 'three/webgpu'
+import { TextCanvas } from '../text/canvas'
 import type { PixelFrame } from '../rendering/PixelFrame'
 import type { StudyScene } from '../scenes/StudyScene'
 import { VideoExporter } from '../video/VideoExporter'
@@ -16,6 +18,9 @@ export interface ApplicationElements {
   download: HTMLAnchorElement
   result: HTMLDetailsElement
   video: HTMLVideoElement
+  textSettings: HTMLFieldSetElement
+  text: HTMLTextAreaElement
+  applyTextButton: HTMLButtonElement
 }
 
 interface FrameRequest {
@@ -38,6 +43,11 @@ export class Application {
   private exportController: AbortController | null = null
   private downloadUrl: string | null = null
   private backend = ''
+  private readonly textCanvas = new TextCanvas()
+  private textTexture: CanvasTexture | null = null
+  private appliedText: string | null = null
+  private updatingText = false
+  private textJob: Promise<boolean> | null = null
 
   constructor(elements: ApplicationElements, scene: StudyScene) {
     this.renderer = new SceneRenderer(elements.canvas)
@@ -58,11 +68,78 @@ export class Application {
     this.applyResolution()
     this.elements.resolution.addEventListener('change', this.applyResolution)
     this.elements.exportButton.addEventListener('click', this.exportVideo)
+    this.elements.applyTextButton.addEventListener('click', this.applyText)
     await this.renderer.setAnimationLoop(this.render)
 
     this.backend = this.renderer.backendName
-    this.elements.exportButton.disabled = false
-    this.showPreviewStatus()
+    await this.updateText()
+    this.syncControls()
+  }
+
+  private syncControls(): void {
+    const busy = this.disposed || !this.initialized || this.exporting || this.updatingText
+    this.elements.settings.disabled = busy
+    this.elements.textSettings.disabled = busy
+    this.elements.exportButton.disabled = busy
+  }
+
+  private readonly applyText = (): void => {
+    if (this.disposed || this.exporting) return
+    void this.updateText()
+  }
+
+  private updateText(): Promise<boolean> {
+    if (this.textJob) return this.textJob
+    const text = this.elements.text.value
+    if (text === this.appliedText) {
+      this.showPreviewStatus()
+      return Promise.resolve(true)
+    }
+    this.updatingText = true
+    this.syncControls()
+    this.elements.status.textContent = 'テキストを準備しています…'
+    const job = this.createTextTexture(text).finally(() => {
+      this.updatingText = false
+      this.textJob = null
+      this.syncControls()
+    })
+    this.textJob = job
+    return job
+  }
+
+  private async createTextTexture(text: string): Promise<boolean> {
+    try {
+      const canvas = await this.textCanvas.draw(text, {
+        width: 512,
+        height: 512,
+        fontFamily: 'Noto Sans JP',
+        fontWeight: 700,
+        fontSize: 40,
+        minFontSize: 16,
+        lineHeight: 1.6,
+        letterSpacing: 1,
+        textAlign: 'left',
+        color: '#17211d',
+        background: '#ffffff',
+        padding: 44,
+        pixelRatio: Math.min(Math.max(window.devicePixelRatio, 1), 2),
+      })
+      if (this.disposed) return false
+      const texture = new CanvasTexture(canvas)
+      texture.colorSpace = SRGBColorSpace
+      this.activeScene.setTexture(texture)
+      this.textTexture?.dispose()
+      this.textTexture = texture
+      this.appliedText = text
+      this.showPreviewStatus()
+      return true
+    } catch (error) {
+      if (!this.disposed) {
+        console.error(error)
+        this.elements.status.textContent = error instanceof Error ? error.message : 'テキストを反映できませんでした。'
+      }
+      return false
+    }
   }
 
   private readSettings(): VideoSettings {
@@ -130,9 +207,11 @@ export class Application {
   }
 
   private readonly exportVideo = async (): Promise<void> => {
-    if (this.disposed || !this.initialized || this.exporting) return
+    if (this.disposed || !this.initialized || this.exporting || this.updatingText) return
+    // 反映ボタンを押していない入力も、書き出し前に確実に反映する。
+    if (!await this.updateText() || this.disposed) return
     this.exporting = true
-    this.elements.settings.disabled = true
+    this.syncControls()
     this.elements.download.hidden = true
     this.elements.result.hidden = true
     this.elements.video.pause()
@@ -174,7 +253,7 @@ export class Application {
       this.exportController = null
       this.startTime = null
       if (!this.disposed) {
-        this.elements.settings.disabled = false
+        this.syncControls()
         // 失敗した場合も、前回正常に生成できた動画は再び保存・確認できる。
         this.elements.download.hidden = this.downloadUrl === null
         this.elements.result.hidden = this.downloadUrl === null
@@ -189,8 +268,10 @@ export class Application {
     this.pendingFrame?.reject(new Error('アプリが破棄されました。'))
     this.pendingFrame = null
     this.elements.settings.disabled = true
+    this.elements.textSettings.disabled = true
     this.elements.resolution.removeEventListener('change', this.applyResolution)
     this.elements.exportButton.removeEventListener('click', this.exportVideo)
+    this.elements.applyTextButton.removeEventListener('click', this.applyText)
     if (this.downloadUrl) URL.revokeObjectURL(this.downloadUrl)
     this.elements.video.removeAttribute('src')
     this.elements.video.load()
@@ -198,6 +279,7 @@ export class Application {
     // GPU読み出し中のリソースを先に破棄しない。
     if (this.frameReadback) await this.frameReadback
     this.activeScene.dispose()
+    this.textTexture?.dispose()
     if (this.initialized) await this.renderer.dispose()
   }
 }
