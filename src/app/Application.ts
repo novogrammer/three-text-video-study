@@ -71,7 +71,8 @@ export class Application {
     const quality = this.elements.quality.value
     if ((resolution !== 512 && resolution !== 1024)
       || (frameRate !== 30 && frameRate !== 60)
-      || (quality !== 'low' && quality !== 'medium' && quality !== 'high')) {
+      || (quality !== 'very-low' && quality !== 'low' && quality !== 'medium'
+        && quality !== 'high' && quality !== 'very-high')) {
       throw new Error('書き出し設定が不正です。')
     }
     return { resolution, frameRate, quality }

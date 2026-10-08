@@ -4,9 +4,7 @@ import {
   VideoSampleSource,
   Mp4OutputFormat,
   Output,
-  QUALITY_HIGH,
-  QUALITY_LOW,
-  QUALITY_MEDIUM,
+  Quality,
   canEncodeVideo,
 } from 'mediabunny'
 import type { VideoSettings } from './settings'
@@ -23,11 +21,7 @@ export class VideoExporter {
     signal: AbortSignal,
     onProgress: (completed: number, total: number) => void,
   ): Promise<Blob> {
-    const quality = {
-      low: QUALITY_LOW,
-      medium: QUALITY_MEDIUM,
-      high: QUALITY_HIGH,
-    }[settings.quality]
+    const quality = new Quality(settings.quality)
 
     if (!Number.isFinite(duration) || duration <= 0) {
       throw new Error('Sceneの周期は正の秒数にしてください。')
