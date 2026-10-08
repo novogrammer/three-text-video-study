@@ -40,7 +40,7 @@ export class Application {
     await this.renderer.setAnimationLoop(this.render)
 
     const backend = 'isWebGPUBackend' in this.renderer.backend ? 'WebGPU' : 'WebGL 2'
-    this.status.textContent = `${backend} / 描画中`
+    this.status.textContent = `${backend} / ${this.activeScene.duration}秒ループ / 描画中`
   }
 
   private readonly resize = (): void => {

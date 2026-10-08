@@ -16,7 +16,7 @@ export class CubeScene implements StudyScene {
   readonly scene = new Scene()
   readonly camera = new PerspectiveCamera(45, 1, 0.1, 100)
 
-  private readonly duration = 8
+  readonly duration = 8
   private readonly geometry = new BoxGeometry(1.4, 1.4, 1.4)
   private readonly material = new MeshStandardMaterial({
     color: 0x68cf91,
