@@ -2,15 +2,25 @@ import './style.scss'
 import { Application } from './app/Application'
 import { CubeScene } from './scenes/CubeScene'
 
-const viewport = document.querySelector<HTMLElement>('[data-viewport]')
-const canvas = document.querySelector<HTMLCanvasElement>('[data-canvas]')
-const status = document.querySelector<HTMLElement>('[data-status]')
-
-if (!viewport || !canvas || !status) {
-  throw new Error('描画に必要なHTML要素が見つかりません。')
+function getElement<T extends HTMLElement>(selector: string): T {
+  const element = document.querySelector<T>(selector)
+  if (!element) throw new Error(`HTML要素が見つかりません: ${selector}`)
+  return element
 }
 
-const application = new Application(canvas, viewport, status, new CubeScene())
+const status = getElement<HTMLElement>('[data-status]')
+const application = new Application({
+  canvas: getElement<HTMLCanvasElement>('[data-canvas]'),
+  status,
+  settings: getElement<HTMLFieldSetElement>('[data-settings]'),
+  resolution: getElement<HTMLSelectElement>('[data-resolution]'),
+  frameRate: getElement<HTMLSelectElement>('[data-frame-rate]'),
+  quality: getElement<HTMLSelectElement>('[data-quality]'),
+  exportButton: getElement<HTMLButtonElement>('[data-export]'),
+  download: getElement<HTMLAnchorElement>('[data-download]'),
+  result: getElement<HTMLDetailsElement>('[data-result]'),
+  video: getElement<HTMLVideoElement>('[data-video]'),
+}, new CubeScene())
 
 void application.start().catch((error: unknown) => {
   console.error(error)

@@ -6,7 +6,9 @@
 
 ## 現在の状態
 
-Cubeが浮遊・回転するシーンを実装しています。テキスト描画と動画書き出しは未実装です。
+Cubeが浮遊・回転するシーンとMP4書き出しを実装しています。テキスト描画は未実装です。
+
+解像度（512 × 512 / 1024 × 1024）、フレームレート（30 / 60fps）、品質（低 / 標準 / 高）を選び、「MP4を書き出す」を押します。Sceneの周期1回分を生成し、完了後に「MP4を保存」からダウンロードできます。「書き出した動画を確認」で生成結果を再生できます。H.264エンコードに対応したブラウザーが必要です。
 
 ## 開発方法
 
@@ -31,10 +33,12 @@ npm run dev
 | --- | --- |
 | `index.html` | ページのHTML構造 |
 | `src/main.ts` | TypeScriptのエントリーポイント |
-| `src/app/Application.ts` | Renderer、描画ループ、リサイズの管理 |
+| `src/app/Application.ts` | Renderer、描画ループ、設定UIの管理 |
 | `src/scenes/CubeScene.ts` | 最初のCubeシーン |
 | `src/scenes/StudyScene.ts` | シーンの共通インターフェース |
 | `src/animation/timeline.ts` | 時刻からループ進行値への変換 |
+| `src/video/VideoExporter.ts` | 固定フレームレートのMP4生成 |
+| `src/video/settings.ts` | 書き出し設定の型 |
 | `src/style.scss` | スタイルのエントリーポイント |
 | `docs/spec.md` | 共通仕様と初期プロトタイプの要件 |
 | `AGENTS.md` | 実装規約と作業上の制約 |

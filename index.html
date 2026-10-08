@@ -11,10 +11,47 @@
         <h1 class="study__title">three-text-video-study</h1>
         <p class="study__description">Cube / 浮遊と回転</p>
       </header>
-      <div class="study__viewport" data-viewport>
-        <canvas class="study__canvas" data-canvas aria-label="浮遊しながら回転するCube"></canvas>
+      <fieldset class="export-settings" data-settings>
+        <legend class="export-settings__legend">書き出し設定</legend>
+        <div class="export-settings__fields">
+          <label class="export-settings__field">
+            解像度
+            <select class="export-settings__select" data-resolution>
+              <option value="512">512 × 512</option>
+              <option value="1024" selected>1024 × 1024</option>
+            </select>
+          </label>
+          <label class="export-settings__field">
+            フレームレート
+            <select class="export-settings__select" data-frame-rate>
+              <option value="30" selected>30 fps</option>
+              <option value="60">60 fps</option>
+            </select>
+          </label>
+          <label class="export-settings__field">
+            品質
+            <select class="export-settings__select" data-quality>
+              <option value="low">低（ファイルサイズ優先）</option>
+              <option value="medium" selected>標準</option>
+              <option value="high">高（画質優先）</option>
+            </select>
+          </label>
+          <button class="export-settings__button" type="button" data-export disabled>MP4を書き出す</button>
+        </div>
+      </fieldset>
+      <div class="study__viewport">
+        <div class="study__frame">
+          <canvas class="study__canvas" width="1024" height="1024" data-canvas aria-label="浮遊しながら回転するCube"></canvas>
+        </div>
       </div>
-      <p class="study__status" data-status role="status">描画を準備しています…</p>
+      <footer class="study__footer">
+        <p class="study__status" data-status role="status">描画を準備しています…</p>
+        <a class="study__download" data-download hidden>MP4を保存</a>
+        <details class="study__result" data-result hidden>
+          <summary>書き出した動画を確認</summary>
+          <video class="study__video" data-video controls loop playsinline aria-label="書き出したMP4"></video>
+        </details>
+      </footer>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
