@@ -1,8 +1,10 @@
 import {
   AdditiveBlending, BufferGeometry, CanvasTexture, Color, Float32BufferAttribute,
   FogExp2, Group, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial,
-  PerspectiveCamera, PlaneGeometry, Scene, SRGBColorSpace,
+  PerspectiveCamera, PlaneGeometry, RenderPipeline, Scene, SRGBColorSpace,
 } from 'three/webgpu'
+import { pass } from 'three/tsl'
+import { bloom } from 'three/addons/tsl/display/BloomNode.js'
 import type { WebGPURenderer } from 'three/webgpu'
 import type { StudyScene } from './StudyScene'
 import { TextCanvas } from '../text/canvas'
@@ -12,6 +14,10 @@ export class VaporwaveScene implements StudyScene {
   readonly duration = 12
   private readonly scene = new Scene()
   private readonly camera = new PerspectiveCamera(65, 1, 0.1, 180)
+  private readonly scenePass = pass(this.scene, this.camera, { samples: 4 })
+  private readonly sceneColor = this.scenePass.getTextureNode('output')
+  private readonly bloomPass = bloom(this.sceneColor, 0.65, 0.2, 1)
+  private pipeline: RenderPipeline | null = null
   private readonly tiles: Group[] = []
   private readonly terrainGeometry = this.createTerrainGeometry()
   private readonly terrainMaterial = new LineBasicMaterial({ vertexColors: true })
@@ -45,7 +51,8 @@ export class VaporwaveScene implements StudyScene {
       tile.add(new LineSegments(this.terrainGeometry, this.terrainMaterial))
       for (const side of [-1, 1]) {
         const material = new MeshBasicMaterial({
-          color: side < 0 ? 0x7ceeff : 0xff86da,
+          // HDRの明るさでBloomを発生させ、細い文字本体はそのまま残す。
+          color: new Color(side < 0 ? 0x7ceeff : 0xff86da).multiplyScalar(4),
           transparent: true, depthWrite: false, blending: AdditiveBlending,
         })
         const plane = new Mesh(this.textGeometry, material)
@@ -78,7 +85,7 @@ export class VaporwaveScene implements StudyScene {
     const positions: number[] = []
     const colors: number[] = []
     const regular = new Color(0x9b47c9)
-    const roadEdge = new Color(0xff65d4)
+    const roadEdge = new Color(0xff65d4).multiplyScalar(3)
     const addSegment = (x1: number, z1: number, x2: number, z2: number): void => {
       const color = x1 === x2 && Math.abs(x1) === 6 ? roadEdge : regular
       positions.push(x1, this.terrainHeight(x1, z1), z1,
@@ -147,15 +154,7 @@ export class VaporwaveScene implements StudyScene {
       pixelRatio: Math.min(Math.max(window.devicePixelRatio, 1), 2),
     })
     if (this.disposed || revision !== this.textRevision) return
-    const canvas = document.createElement('canvas')
-    canvas.width = source.width
-    canvas.height = source.height
-    const context = canvas.getContext('2d')
-    if (!context) throw new Error('ネオン文字用のCanvasを作成できません。')
-    context.shadowColor = '#ffffff'
-    context.shadowBlur = 6 * source.width / 1024
-    context.drawImage(source, 0, 0)
-    const texture = new CanvasTexture(canvas)
+    const texture = new CanvasTexture(source)
     texture.colorSpace = SRGBColorSpace
     for (const plane of this.textPlanes) {
       plane.material.map = texture
@@ -166,7 +165,20 @@ export class VaporwaveScene implements StudyScene {
   }
 
   render(renderer: WebGPURenderer): void {
-    renderer.render(this.scene, this.camera)
+    this.pipeline ??= new RenderPipeline(renderer, this.sceneColor.add(this.bloomPass))
+    // 中間パスは線形HDRで処理し、最終パスを共通の出力先へ描画する。
+    const target = renderer.getRenderTarget()
+    const toneMapping = renderer.toneMapping
+    const outputColorSpace = renderer.outputColorSpace
+    const xrEnabled = renderer.xr.enabled
+    try {
+      this.pipeline.render()
+    } finally {
+      renderer.setRenderTarget(target)
+      renderer.toneMapping = toneMapping
+      renderer.outputColorSpace = outputColorSpace
+      renderer.xr.enabled = xrEnabled
+    }
   }
 
   resize(width: number, height: number): void {
@@ -184,6 +196,9 @@ export class VaporwaveScene implements StudyScene {
     }
     this.textTexture?.dispose()
     this.textTexture = null
+    this.pipeline?.dispose()
+    this.bloomPass.dispose()
+    this.scenePass.dispose()
     this.terrainGeometry.dispose()
     this.terrainMaterial.dispose()
     this.textGeometry.dispose()
