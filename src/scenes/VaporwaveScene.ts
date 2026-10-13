@@ -12,8 +12,13 @@ import { getLoopProgress } from '../animation/timeline'
 
 export class VaporwaveScene implements StudyScene {
   readonly duration = 12
+  private readonly tileLength = 32
+  private readonly tileCount = 5
+  // カメラの上向き角度も考慮し、farの外へ1単位の余裕を持たせる。
+  private readonly tileFront = 47
   private readonly scene = new Scene()
-  private readonly camera = new PerspectiveCamera(65, 1, 0.1, 180)
+  // 従来の地形の最遠端Z=-96と、カメラZ=8から決める。
+  private readonly camera = new PerspectiveCamera(65, 1, 0.1, 104)
   private readonly scenePass = pass(this.scene, this.camera, { samples: 4 })
   private readonly sceneColor = this.scenePass.getTextureNode('output')
   private readonly bloomPass = bloom(this.sceneColor, 0.65, 0.2, 0.1)
@@ -45,8 +50,8 @@ export class VaporwaveScene implements StudyScene {
     sun.position.set(0, 9, -85)
     this.scene.add(sun)
 
-    // 同じ区間を並べ、カメラの後方まで通過してから奥へ戻す。
-    for (let index = 0; index < 4; index++) {
+    // 予備の区間を奥に置き、再配置がfarの外で起こるようにする。
+    for (let index = 0; index < this.tileCount; index++) {
       const tile = new Group()
       tile.add(new LineSegments(this.terrainGeometry, this.terrainMaterial))
       for (const side of [-1, 1]) {
@@ -131,9 +136,11 @@ export class VaporwaveScene implements StudyScene {
   }
 
   update(time: number): void {
-    const travel = getLoopProgress(time, this.duration) * 32
+    const travel = getLoopProgress(time, this.duration) * this.tileLength
+    const span = this.tileLength * this.tileCount
     this.tiles.forEach((tile, index) => {
-      tile.position.z = 48 - ((32 + index * 32 - travel + 128) % 128)
+      tile.position.z = this.tileFront
+        - ((this.tileLength * (index + 1) - travel + span) % span)
     })
     for (const plane of this.textPlanes) {
       const z = plane.position.z + plane.parent!.position.z
