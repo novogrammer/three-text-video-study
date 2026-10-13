@@ -16,7 +16,7 @@ export class VaporwaveScene implements StudyScene {
   private readonly camera = new PerspectiveCamera(65, 1, 0.1, 180)
   private readonly scenePass = pass(this.scene, this.camera, { samples: 4 })
   private readonly sceneColor = this.scenePass.getTextureNode('output')
-  private readonly bloomPass = bloom(this.sceneColor, 0.65, 0.2, 1)
+  private readonly bloomPass = bloom(this.sceneColor, 0.65, 0.2, 0.1)
   private pipeline: RenderPipeline | null = null
   private readonly tiles: Group[] = []
   private readonly terrainGeometry = this.createTerrainGeometry()
@@ -52,7 +52,7 @@ export class VaporwaveScene implements StudyScene {
       for (const side of [-1, 1]) {
         const material = new MeshBasicMaterial({
           // HDRの明るさでBloomを発生させ、細い文字本体はそのまま残す。
-          color: new Color(side < 0 ? 0x7ceeff : 0xff86da).multiplyScalar(4),
+          color: new Color(side < 0 ? 0x7ceeff : 0xff86da).multiplyScalar(10),
           transparent: true, depthWrite: false, blending: AdditiveBlending,
         })
         const plane = new Mesh(this.textGeometry, material)
