@@ -17,11 +17,11 @@
       <main class="workspace">
         <section class="preview" aria-labelledby="scene-title">
           <div class="preview__heading">
-            <p class="preview__eyebrow">SCENE 01</p>
-            <h1 class="preview__title" id="scene-title">Cube · 浮遊と回転</h1>
+            <p class="preview__eyebrow" data-scene-number>SCENE 02</p>
+            <h1 class="preview__title" id="scene-title" data-scene-title>Torus · 内側を巡る</h1>
           </div>
           <div class="preview__stage">
-            <canvas class="preview__canvas" width="1024" height="1024" data-canvas aria-label="浮遊しながら回転するCube"></canvas>
+            <canvas class="preview__canvas" width="1024" height="1024" data-canvas aria-label="Torus · 内側を巡る"></canvas>
           </div>
           <p class="preview__caption">正方形のプレビュー。選択した解像度で書き出します。</p>
         </section>
@@ -30,9 +30,16 @@
             <h2 class="panel__title">シーンを、短いループ動画に。</h2>
             <p class="panel__description">サイズと画質を選び、MP4で保存できます。</p>
           </div>
+          <label class="scene-picker" for="scene-select">
+            シーン
+            <select class="scene-picker__select" id="scene-select" data-scene disabled>
+              <option value="cube">Cube · 浮遊と回転</option>
+              <option value="torus" selected>Torus · 内側を巡る</option>
+            </select>
+          </label>
           <fieldset class="text-editor" data-text-settings disabled>
             <legend class="text-editor__legend">テキスト</legend>
-            <label class="text-editor__label" for="scene-text">Cubeに表示する文章</label>
+            <label class="text-editor__label" for="scene-text">シーンに表示する文章</label>
             <textarea class="text-editor__input" id="scene-text" data-text rows="5" maxlength="500" spellcheck="false" aria-describedby="text-hint">吾輩は猫である。名前はまだ無い。どこで生れたかとんと見当がつかぬ。</textarea>
             <p class="text-editor__hint" id="text-hint">自然な位置で自動改行します。入力した改行も反映されます。</p>
             <button class="button button--subtle" type="button" data-apply-text>テキストを反映</button>

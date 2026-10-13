@@ -379,3 +379,22 @@ textarea:disabled {
     font-size: 20px;
   }
 }
+
+.scene-picker {
+  display: grid;
+  gap: 11px;
+  padding-bottom: 21px;
+  color: #bac0c0;
+  font-size: 11px;
+
+  &__select {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid #363d40;
+    border-radius: 3px;
+    padding: 11px 8px;
+    background: #1a1e20;
+    color: #d8dcd8;
+    font-size: 11px;
+  }
+}

@@ -1,11 +1,16 @@
 import { SceneRenderer } from '../rendering/SceneRenderer'
 import type { PixelFrame } from '../rendering/PixelFrame'
 import type { StudyScene } from '../scenes/StudyScene'
+import { getSceneDefinition } from '../scenes/registry'
+import type { SceneDefinition } from '../scenes/registry'
 import { VideoExporter } from '../video/VideoExporter'
 import type { CaptureFrame } from '../video/VideoExporter'
 import type { VideoSettings } from '../video/settings'
 
 export interface ApplicationElements {
+  sceneSelect: HTMLSelectElement
+  sceneTitle: HTMLElement
+  sceneNumber: HTMLElement
   canvas: HTMLCanvasElement
   status: HTMLElement
   settings: HTMLFieldSetElement
@@ -30,7 +35,9 @@ interface FrameRequest {
 export class Application {
   private readonly renderer: SceneRenderer
   private readonly elements: ApplicationElements
-  private readonly activeScene: StudyScene
+  private activeScene: StudyScene
+  private sceneDefinition: SceneDefinition
+  private switchingScene = false
   private readonly exporter = new VideoExporter()
   private startTime: number | null = null
   private initialized = false
@@ -45,10 +52,11 @@ export class Application {
   private updatingText = false
   private textJob: Promise<boolean> | null = null
 
-  constructor(elements: ApplicationElements, scene: StudyScene) {
+  constructor(elements: ApplicationElements, definition: SceneDefinition) {
     this.renderer = new SceneRenderer(elements.canvas)
     this.elements = elements
-    this.activeScene = scene
+    this.sceneDefinition = definition
+    this.activeScene = definition.create()
   }
 
   async start(): Promise<void> {
@@ -62,6 +70,7 @@ export class Application {
     }
 
     this.applyResolution()
+    this.elements.sceneSelect.addEventListener('change', this.changeScene)
     this.elements.resolution.addEventListener('change', this.applyResolution)
     this.elements.exportButton.addEventListener('click', this.exportVideo)
     this.elements.applyTextButton.addEventListener('click', this.applyText)
@@ -73,14 +82,53 @@ export class Application {
   }
 
   private syncControls(): void {
-    const busy = this.disposed || !this.initialized || this.exporting || this.updatingText
+    const busy = this.disposed || !this.initialized || this.exporting || this.updatingText || this.switchingScene
+    this.elements.sceneSelect.disabled = busy
     this.elements.settings.disabled = busy
     this.elements.textSettings.disabled = busy
     this.elements.exportButton.disabled = busy
   }
 
+  private readonly changeScene = async (): Promise<void> => {
+    if (this.disposed || this.exporting || this.updatingText || this.switchingScene) return
+    this.switchingScene = true
+    this.syncControls()
+    this.elements.status.textContent = 'シーンを準備しています…'
+    let candidate: StudyScene | null = null
+    try {
+      const definition = getSceneDefinition(this.elements.sceneSelect.value)
+      candidate = definition.create()
+      const text = this.elements.text.value
+      await candidate.setText(text)
+      if (this.disposed) return
+      candidate.resize(this.elements.canvas.width, this.elements.canvas.height)
+      candidate.update(0)
+      const previous = this.activeScene
+      this.activeScene = candidate
+      candidate = null
+      this.sceneDefinition = definition
+      this.appliedText = text
+      this.startTime = null
+      this.elements.sceneTitle.textContent = definition.title
+      this.elements.sceneNumber.textContent = `SCENE ${definition.number}`
+      this.elements.canvas.setAttribute('aria-label', definition.title)
+      previous.dispose()
+      this.showPreviewStatus()
+    } catch (error) {
+      if (!this.disposed) {
+        console.error(error)
+        this.elements.status.textContent = error instanceof Error ? error.message : 'シーンを切り替えられませんでした。'
+      }
+    } finally {
+      candidate?.dispose()
+      this.elements.sceneSelect.value = this.sceneDefinition.id
+      this.switchingScene = false
+      this.syncControls()
+    }
+  }
+
   private readonly applyText = (): void => {
-    if (this.disposed || this.exporting) return
+    if (this.disposed || this.exporting || this.switchingScene) return
     void this.updateText()
   }
 
@@ -184,7 +232,7 @@ export class Application {
   }
 
   private readonly exportVideo = async (): Promise<void> => {
-    if (this.disposed || !this.initialized || this.exporting || this.updatingText) return
+    if (this.disposed || !this.initialized || this.exporting || this.updatingText || this.switchingScene) return
     // 反映ボタンを押していない入力も、書き出し前に確実に反映する。
     if (!await this.updateText() || this.disposed) return
     this.exporting = true
@@ -215,7 +263,7 @@ export class Application {
       if (this.downloadUrl) URL.revokeObjectURL(this.downloadUrl)
       this.downloadUrl = URL.createObjectURL(blob)
       this.elements.download.href = this.downloadUrl
-      this.elements.download.download = `scene-${settings.resolution}-${settings.frameRate}fps-${settings.quality}.mp4`
+      this.elements.download.download = `${this.sceneDefinition.id}-${settings.resolution}-${settings.frameRate}fps-${settings.quality}.mp4`
       this.elements.download.hidden = false
       this.elements.video.src = this.downloadUrl
       this.elements.result.hidden = false
@@ -244,8 +292,10 @@ export class Application {
     this.exportController?.abort()
     this.pendingFrame?.reject(new Error('アプリが破棄されました。'))
     this.pendingFrame = null
+    this.elements.sceneSelect.disabled = true
     this.elements.settings.disabled = true
     this.elements.textSettings.disabled = true
+    this.elements.sceneSelect.removeEventListener('change', this.changeScene)
     this.elements.resolution.removeEventListener('change', this.applyResolution)
     this.elements.exportButton.removeEventListener('click', this.exportVideo)
     this.elements.applyTextButton.removeEventListener('click', this.applyText)

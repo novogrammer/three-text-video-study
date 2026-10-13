@@ -1,6 +1,6 @@
 import './style.scss'
 import { Application } from './app/Application'
-import { CubeScene } from './scenes/CubeScene'
+import { getSceneDefinition } from './scenes/registry'
 
 function getElement<T extends HTMLElement>(selector: string): T {
   const element = document.querySelector<T>(selector)
@@ -9,7 +9,11 @@ function getElement<T extends HTMLElement>(selector: string): T {
 }
 
 const status = getElement<HTMLElement>('[data-status]')
+const sceneSelect = getElement<HTMLSelectElement>('[data-scene]')
 const application = new Application({
+  sceneSelect,
+  sceneTitle: getElement<HTMLElement>('[data-scene-title]'),
+  sceneNumber: getElement<HTMLElement>('[data-scene-number]'),
   canvas: getElement<HTMLCanvasElement>('[data-canvas]'),
   status,
   settings: getElement<HTMLFieldSetElement>('[data-settings]'),
@@ -23,7 +27,7 @@ const application = new Application({
   textSettings: getElement<HTMLFieldSetElement>('[data-text-settings]'),
   text: getElement<HTMLTextAreaElement>('[data-text]'),
   applyTextButton: getElement<HTMLButtonElement>('[data-apply-text]'),
-}, new CubeScene())
+}, getSceneDefinition(sceneSelect.value))
 
 void application.start().catch((error: unknown) => {
   console.error(error)
