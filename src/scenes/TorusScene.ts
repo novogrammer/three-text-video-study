@@ -38,8 +38,8 @@ export class TorusScene implements StudyScene {
     const angle = getLoopProgress(time, this.duration) * Math.PI * 2
     // 視線軸の周りを公転。接線は常に-Zなのでカメラは動かさない。
     this.orbit.rotation.z = angle
-    // トーラス自身の軸で自転し、内壁の文字が奥から手前へ流れる。
-    this.torus.rotation.z = -angle
+    // トーラス自身の軸で自転し、内壁の文字を流す。
+    this.torus.rotation.z = angle
   }
 
   async setText(text: string): Promise<void> {
