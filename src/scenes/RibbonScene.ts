@@ -1,8 +1,9 @@
 import {
   BufferGeometry, CanvasTexture, CatmullRomCurve3, Color, DirectionalLight,
-  Float32BufferAttribute, FrontSide, HemisphereLight, Mesh, MeshStandardMaterial,
+  Float32BufferAttribute, FrontSide, HemisphereLight, Mesh, MeshStandardNodeMaterial,
   PerspectiveCamera, Quaternion, RepeatWrapping, Scene, SRGBColorSpace, Vector3,
 } from 'three/webgpu'
+import { materialColor } from 'three/tsl'
 import type { WebGPURenderer } from 'three/webgpu'
 import type { StudyScene } from './StudyScene'
 import { TextCanvas } from '../text/canvas'
@@ -23,11 +24,14 @@ export class RibbonScene implements StudyScene {
   ])
   private readonly frontGeometry = this.createFrontGeometry()
   private readonly backGeometry = this.createBackGeometry()
-  private readonly frontMaterial = new MeshStandardMaterial({
+  // 明示的なNodeで、固定Meshでも毎フレームUV変換のuniformを更新する。
+  private readonly frontMaterial = new MeshStandardNodeMaterial({
     color: 0xffffff, roughness: 0.9, metalness: 0, side: FrontSide,
+    colorNode: materialColor,
   })
-  private readonly backMaterial = new MeshStandardMaterial({
+  private readonly backMaterial = new MeshStandardNodeMaterial({
     color: 0xdadada, roughness: 0.9, metalness: 0, side: FrontSide,
+    colorNode: materialColor,
   })
   private readonly textCanvas = new TextCanvas()
   private textTexture: CanvasTexture | null = null
@@ -113,7 +117,11 @@ export class RibbonScene implements StudyScene {
 
   update(time: number): void {
     this.time = time
-    if (this.textTexture) this.textTexture.offset.x = -getLoopProgress(time, this.duration)
+    if (this.textTexture) {
+      this.textTexture.offset.x = -getLoopProgress(time, this.duration)
+      // GPUへuniformが送られる前に、offsetを変換行列へ反映する。
+      this.textTexture.updateMatrix()
+    }
   }
 
   async setText(text: string): Promise<void> {
@@ -131,6 +139,7 @@ export class RibbonScene implements StudyScene {
     texture.colorSpace = SRGBColorSpace
     texture.wrapS = RepeatWrapping
     texture.offset.x = -getLoopProgress(this.time, this.duration)
+    texture.updateMatrix()
     this.frontMaterial.map = this.backMaterial.map = texture
     this.frontMaterial.needsUpdate = this.backMaterial.needsUpdate = true
     this.textTexture?.dispose()

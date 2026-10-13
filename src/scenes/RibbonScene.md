@@ -8,4 +8,6 @@
 
 Noto Sans JPのweight 700で、白地に黒文字の1024×256の素材を作る。Uを中心線の実距離に比例させ、素材の4:1の比率に合わせる。表裏は同じテクスチャを共有し、offset.xだけを絶対時刻から更新する。10秒で素材1枚分進み、繰り返し表示によって同じ景色へ戻る。開いた帯なので、帯全体に貼る素材の枚数は整数に固定しない。
 
+固定MeshでもUV変換が毎フレームGPUへ反映されるよう、表裏にMeshStandardNodeMaterialを使い、colorNodeにmaterialColorを明示する。offsetを変更した直後にtexture.updateMatrix()で変換行列も更新する。
+
 文章の明示的な改行と自動改行を反映する。素材の生成、差し替え、描画とリソースの破棄はRibbonSceneが担当する。
