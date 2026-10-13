@@ -112,7 +112,7 @@ export class VaporwaveScene implements StudyScene {
     const revision = ++this.textRevision
     const source = await this.textCanvas.draw(text, {
       width: 1024, height: 512,
-      fontFamily: 'Noto Sans JP', fontWeight: 300,
+      fontFamily: 'Noto Sans JP', fontWeight: 100,
       fontSize: 64, minFontSize: 18, lineHeight: 1.6, letterSpacing: 2,
       textAlign: 'center', color: '#ffffff', background: 'transparent', padding: 48,
       pixelRatio: Math.min(Math.max(window.devicePixelRatio, 1), 2),
