@@ -1,7 +1,7 @@
 import {
-  AdditiveBlending, CanvasTexture, Color, ConeGeometry, FogExp2, GridHelper,
-  Group, Mesh, MeshBasicMaterial, PerspectiveCamera, PlaneGeometry, Scene,
-  SRGBColorSpace,
+  AdditiveBlending, BufferGeometry, CanvasTexture, Color, Float32BufferAttribute,
+  FogExp2, Group, LineBasicMaterial, LineSegments, Mesh, MeshBasicMaterial,
+  PerspectiveCamera, PlaneGeometry, Scene, SRGBColorSpace,
 } from 'three/webgpu'
 import type { WebGPURenderer } from 'three/webgpu'
 import type { StudyScene } from './StudyScene'
@@ -13,13 +13,10 @@ export class VaporwaveScene implements StudyScene {
   private readonly scene = new Scene()
   private readonly camera = new PerspectiveCamera(65, 1, 0.1, 180)
   private readonly tiles: Group[] = []
-  private readonly grids: GridHelper[] = []
+  private readonly terrainGeometry = this.createTerrainGeometry()
+  private readonly terrainMaterial = new LineBasicMaterial({ vertexColors: true })
   private readonly textPlanes: Mesh<PlaneGeometry, MeshBasicMaterial>[] = []
   private readonly textGeometry = new PlaneGeometry(9, 4.5)
-  private readonly mountainGeometry = new ConeGeometry(1, 1, 4, 1, true)
-  private readonly mountainMaterial = new MeshBasicMaterial({
-    color: 0xab42da, wireframe: true,
-  })
   private readonly sunGeometry = new PlaneGeometry(25, 25)
   private readonly sunTexture: CanvasTexture
   private readonly sunMaterial: MeshBasicMaterial
@@ -45,16 +42,8 @@ export class VaporwaveScene implements StudyScene {
     // 同じ区間を並べ、カメラの後方まで通過してから奥へ戻す。
     for (let index = 0; index < 4; index++) {
       const tile = new Group()
-      const grid = new GridHelper(32, 32, 0xff65d4, 0x7938b8)
-      tile.add(grid)
-      this.grids.push(grid)
+      tile.add(new LineSegments(this.terrainGeometry, this.terrainMaterial))
       for (const side of [-1, 1]) {
-        const mountain = new Mesh(this.mountainGeometry, this.mountainMaterial)
-        mountain.scale.set(7, 9, 10)
-        mountain.position.set(side * 21, 4.5, -4)
-        mountain.rotation.y = Math.PI / 4
-        tile.add(mountain)
-
         const material = new MeshBasicMaterial({
           color: side < 0 ? 0x7ceeff : 0xff86da,
           transparent: true, depthWrite: false, blending: AdditiveBlending,
@@ -69,6 +58,46 @@ export class VaporwaveScene implements StudyScene {
       this.scene.add(tile)
     }
     this.update(0)
+  }
+
+  private terrainHeight(x: number, z: number): number {
+    // 中央12単位を平らにし、道の端から山へ滑らかにつなぐ。
+    const edge = Math.max(0, Math.min(1, (Math.abs(x) - 6) / 8))
+    const slope = edge * edge * (3 - 2 * edge)
+    const phase = z / 32 * Math.PI * 2
+    const side = Math.sign(x)
+    // Z方向を32単位周期にして、区間の境界でも高さを一致させる。
+    const ridge = 5
+      + 2.3 * Math.sin(phase + x * 0.21 + side * 0.7)
+      + 1.5 * Math.sin(phase * 2 - x * 0.37)
+      + 0.8 * Math.cos(phase * 3 + x * 0.51)
+    return slope * ridge
+  }
+
+  private createTerrainGeometry(): BufferGeometry {
+    const positions: number[] = []
+    const colors: number[] = []
+    const regular = new Color(0x9b47c9)
+    const roadEdge = new Color(0xff65d4)
+    const addSegment = (x1: number, z1: number, x2: number, z2: number): void => {
+      const color = x1 === x2 && Math.abs(x1) === 6 ? roadEdge : regular
+      positions.push(x1, this.terrainHeight(x1, z1), z1,
+        x2, this.terrainHeight(x2, z2), z2)
+      colors.push(color.r, color.g, color.b, color.r, color.g, color.b)
+    }
+    // 三角形の対角線は作らず、縦横の格子を1単位ごとに持ち上げる。
+    for (let x = -32; x <= 32; x++) {
+      for (let z = -16; z < 16; z++) addSegment(x, z, x, z + 1)
+    }
+    // 最後の横線は次の区間と共有するので、二重描画しない。
+    for (let z = -16; z < 16; z++) {
+      for (let x = -32; x < 32; x++) addSegment(x, z, x + 1, z)
+    }
+    const geometry = new BufferGeometry()
+    geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+    geometry.setAttribute('color', new Float32BufferAttribute(colors, 3))
+    geometry.computeBoundingSphere()
+    return geometry
   }
 
   private createSunTexture(): CanvasTexture {
@@ -155,10 +184,9 @@ export class VaporwaveScene implements StudyScene {
     }
     this.textTexture?.dispose()
     this.textTexture = null
-    for (const grid of this.grids) grid.dispose()
+    this.terrainGeometry.dispose()
+    this.terrainMaterial.dispose()
     this.textGeometry.dispose()
-    this.mountainGeometry.dispose()
-    this.mountainMaterial.dispose()
     this.sunGeometry.dispose()
     this.sunTexture.dispose()
     this.sunMaterial.dispose()
