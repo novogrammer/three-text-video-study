@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#111315" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;700&display=swap" rel="stylesheet" />
     <title>three-text-video-study</title>
   </head>
   <body>
@@ -17,11 +17,11 @@
       <main class="workspace">
         <section class="preview" aria-labelledby="scene-title">
           <div class="preview__heading">
-            <p class="preview__eyebrow" data-scene-number>SCENE 02</p>
-            <h1 class="preview__title" id="scene-title" data-scene-title>Torus · 内側を巡る</h1>
+            <p class="preview__eyebrow" data-scene-number>SCENE 03</p>
+            <h1 class="preview__title" id="scene-title" data-scene-title>Vaporwave · ネオンの道</h1>
           </div>
           <div class="preview__stage">
-            <canvas class="preview__canvas" width="1024" height="1024" data-canvas aria-label="Torus · 内側を巡る"></canvas>
+            <canvas class="preview__canvas" width="1024" height="1024" data-canvas aria-label="Vaporwave · ネオンの道"></canvas>
           </div>
           <p class="preview__caption">正方形のプレビュー。選択した解像度で書き出します。</p>
         </section>
@@ -34,7 +34,8 @@
             シーン
             <select class="scene-picker__select" id="scene-select" data-scene disabled>
               <option value="cube">Cube · 浮遊と回転</option>
-              <option value="torus" selected>Torus · 内側を巡る</option>
+              <option value="torus">Torus · 内側を巡る</option>
+              <option value="vaporwave" selected>Vaporwave · ネオンの道</option>
             </select>
           </label>
           <fieldset class="text-editor" data-text-settings disabled>

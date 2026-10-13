@@ -8,7 +8,7 @@
 
 ## 現在の状態
 
-ドーナツの管の内側を巡るTorusシーンと、浮遊・回転するCubeシーンを切り替えられます。シーン固有の仕様は [Torusシーン](src/scenes/TorusScene.md) を参照してください。MP4書き出しにも対応しています。
+ネオン文字が浮かぶVaporwave、ドーナツの管の内側を巡るTorus、浮遊・回転するCubeの各シーンを切り替えられます。シーン固有の仕様は [Vaporwaveシーン](src/scenes/VaporwaveScene.md) と [Torusシーン](src/scenes/TorusScene.md) を参照してください。MP4書き出しにも対応しています。
 
 テキストエリアを編集し、「テキストを反映」を押すと選択中のシーンに反映されます。書き出し時にも最新の入力を反映します。長い文章は文字サイズを小さくして収め、収まらない場合はエラーを表示します。Webフォント（Noto Sans JP）はGoogle Fontsから読み込むため、ネットワーク接続が必要です。
 
@@ -38,6 +38,7 @@ npm run dev
 | `src/index.html` | ページのHTML構造 |
 | `src/main.ts` | TypeScriptのエントリーポイント |
 | `src/app/Application.ts` | Renderer、描画ループ、設定UIの管理 |
+| `src/scenes/VaporwaveScene.ts` | ネオン文字と格子が流れるシーン |
 | `src/scenes/TorusScene.ts` | ドーナツの内側を巡るシーン |
 | `src/scenes/registry.ts` | シーンの登録と生成 |
 | `src/scenes/CubeScene.ts` | 最初のCubeシーン |
