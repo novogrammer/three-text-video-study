@@ -118,7 +118,7 @@ export class RibbonScene implements StudyScene {
   update(time: number): void {
     this.time = time
     if (this.textTexture) {
-      this.textTexture.offset.x = -getLoopProgress(time, this.duration)
+      this.textTexture.offset.x = getLoopProgress(time, this.duration)
       // GPUへuniformが送られる前に、offsetを変換行列へ反映する。
       this.textTexture.updateMatrix()
     }
@@ -138,7 +138,7 @@ export class RibbonScene implements StudyScene {
     const texture = new CanvasTexture(canvas)
     texture.colorSpace = SRGBColorSpace
     texture.wrapS = RepeatWrapping
-    texture.offset.x = -getLoopProgress(this.time, this.duration)
+    texture.offset.x = getLoopProgress(this.time, this.duration)
     texture.updateMatrix()
     this.frontMaterial.map = this.backMaterial.map = texture
     this.frontMaterial.needsUpdate = this.backMaterial.needsUpdate = true
