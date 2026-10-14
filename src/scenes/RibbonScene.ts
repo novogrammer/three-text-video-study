@@ -1,5 +1,5 @@
 import {
-  BufferGeometry, CanvasTexture, CatmullRomCurve3, Color, DirectionalLight,
+  BufferGeometry, CanvasTexture, Color, CubicBezierCurve3, DirectionalLight,
   Float32BufferAttribute, FrontSide, HemisphereLight, Mesh, MeshStandardNodeMaterial,
   PerspectiveCamera, Quaternion, RepeatWrapping, Scene, SRGBColorSpace, Vector3,
 } from 'three/webgpu'
@@ -14,14 +14,12 @@ export class RibbonScene implements StudyScene {
   private readonly scene = new Scene()
   private readonly camera = new PerspectiveCamera(42, 1, 0.1, 100)
   private readonly width = 2
-  private readonly curve = new CatmullRomCurve3([
+  private readonly curve = new CubicBezierCurve3(
     new Vector3(-4.6, -4.2, 0),
-    new Vector3(-2.2, -2.8, 0.6),
-    new Vector3(1.4, -1.2, 0.2),
-    new Vector3(-1.4, 1.2, -0.6),
-    new Vector3(2.2, 2.8, 0.3),
+    new Vector3(6, -3, 0.3),
+    new Vector3(-6, 3, -0.3),
     new Vector3(4.6, 4.2, 0),
-  ])
+  )
   private readonly frontGeometry = this.createFrontGeometry()
   private readonly backGeometry = this.createBackGeometry()
   // 明示的なNodeで、固定Meshでも毎フレームUV変換のuniformを更新する。
@@ -59,6 +57,8 @@ export class RibbonScene implements StudyScene {
     const positions: number[] = []
     const uvs: number[] = []
     const indices: number[] = []
+    // 実距離によるサンプリングの精度を上げ、カーブでの間隔を揃える。
+    this.curve.arcLengthDivisions = 2048
     const length = this.curve.getLength()
     const tangent = this.curve.getTangentAt(0)
     const widthDirection = new Vector3(0, 0, 1).cross(tangent).normalize()
