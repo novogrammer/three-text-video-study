@@ -8,7 +8,7 @@
 
 ## 現在の状態
 
-文章が流れるねじれたRibbon、ネオン文字が浮かぶVaporwave、ドーナツの管の内側を巡るTorus、浮遊・回転するCubeの各シーンを切り替えられます。シーン固有の仕様は [Ribbonシーン](src/scenes/RibbonScene.md)、[Vaporwaveシーン](src/scenes/VaporwaveScene.md)、[Torusシーン](src/scenes/TorusScene.md) を参照してください。MP4書き出しにも対応しています。
+ドーナツの管の内側を巡るTorus、ネオン文字が浮かぶVaporwave、文章が流れるねじれたRibbonの各シーンを切り替えられます。初期表示はTorusです。シーン固有の仕様は [Torusシーン](src/scenes/TorusScene.md)、[Vaporwaveシーン](src/scenes/VaporwaveScene.md)、[Ribbonシーン](src/scenes/RibbonScene.md) を参照してください。MP4書き出しにも対応しています。
 
 テキストエリアを編集し、「テキストを反映」を押すと選択中のシーンに反映されます。書き出し時にも最新の入力を反映します。長い文章は文字サイズを小さくして収め、収まらない場合はエラーを表示します。Webフォント（Noto Sans JP）はGoogle Fontsから読み込むため、ネットワーク接続が必要です。
 
@@ -42,7 +42,6 @@ npm run dev
 | `src/scenes/VaporwaveScene.ts` | ネオン文字と格子が流れるシーン |
 | `src/scenes/TorusScene.ts` | ドーナツの内側を巡るシーン |
 | `src/scenes/registry.ts` | シーンの登録と生成 |
-| `src/scenes/CubeScene.ts` | 最初のCubeシーン |
 | `src/scenes/StudyScene.ts` | シーンの共通インターフェース |
 | `src/animation/timeline.ts` | 時刻からループ進行値への変換 |
 | `src/text/` | フォント読み込み、改行、Canvasへのテキスト描画 |
