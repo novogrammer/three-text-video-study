@@ -19,8 +19,8 @@ export class SceneRenderer {
   private readonly displayMaterial = new MeshBasicNodeMaterial({ depthTest: false, depthWrite: false })
   private readonly display = new QuadMesh(this.displayMaterial)
 
-  constructor(canvas: HTMLCanvasElement) {
-    this.renderer = new WebGPURenderer({ canvas, antialias: true, alpha: false })
+  constructor(canvas: HTMLCanvasElement, forceWebGL = false) {
+    this.renderer = new WebGPURenderer({ canvas, antialias: true, alpha: false, forceWebGL })
     this.renderer.setPixelRatio(1)
     this.renderer.outputColorSpace = SRGBColorSpace
     this.renderer.toneMapping = NoToneMapping

@@ -113,6 +113,8 @@ Three.js側ではCanvasTextureを素材として使用する。
 
 `WebGPURenderer` を使用する。
 
+URLの`backend=webgl2`では`forceWebGL`を有効にしてWebGL 2に固定する。省略時・`auto`・未定義の値ではWebGPU優先で自動選択し、利用できなければWebGL 2へフォールバックする。
+
 過去の検証で、WebGPURendererの描画を `setAnimationLoop()` の外で行った際に、影や描画結果が残るような問題が発生した経験がある。
 
 そのため、本プロジェクトでは描画処理を原則として `renderer.setAnimationLoop()` 内で行う。
@@ -184,6 +186,12 @@ frame 2   → time = 2 / 60
 描画結果はRenderTargetへ保持し、プレビューも同じ描画結果を表示する。
 
 書き出しでは表示用Canvasを直接取得せず、RenderTargetから非同期でRGBAピクセルを読み出してMediabunnyへ渡す。ピクセル取得とMediabunnyへの入力が完了してから次のframeへ進む。
+
+H.264はBaselineを明示し、30fpsでは`avc1.420020`（level 3.2）、60fpsでは`avc1.420028`（level 4.0）を使う。対応確認とVideoSampleSourceに同じ`fullCodecString`を渡す。非対応の場合はエラーとし、別プロファイルへ自動変更しない。`latencyMode`は指定せず既定値を使う。これは参照プロジェクトdeterministic-replayでのSafari系の書き出し停止調査を取り込んだ設定で、このプロジェクトのiOS動作を保証するものではない。
+
+書き出し中のみ診断ログを出す。`[record]`はシーン・backend・出力設定、およびフレーム番号・動画時刻・描画予約・状態更新・描画・RGBA読み出し・エンコード・MP4確定の段階を記録する。詳細は先頭20フレームと以降60フレームごとに絞る。5秒以上段階が進まない場合は5秒ごとの`waiting`警告に、段階・経過時間・キャンセル状態・ページのvisibilityを記録する。警告による自動中断はしない。
+
+`[encoder]`は対応確認、エンコーダー設定候補、圧縮済みパケット数、MP4確定・失敗を記録する。`finalize:done`には追加完了フレーム数（submitted）、出力パケット数（packets）、予定フレーム数（expected）を残す。設定候補のログだけでは採用・成功を判断せず、完了ログと実際の生成動画で確認する。
 
 詳細な実装方法はプロトタイプを作りながら検証する。
 

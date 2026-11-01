@@ -28,6 +28,7 @@ export interface ApplicationElements {
 
 interface FrameRequest {
   time: number
+  onStage?: (stage: string) => void
   resolve: (frame: PixelFrame) => void
   reject: (error: unknown) => void
 }
@@ -53,7 +54,10 @@ export class Application {
   private textJob: Promise<boolean> | null = null
 
   constructor(elements: ApplicationElements, definition: SceneDefinition) {
-    this.renderer = new SceneRenderer(elements.canvas)
+    this.renderer = new SceneRenderer(
+      elements.canvas,
+      new URLSearchParams(window.location.search).get('backend') === 'webgl2',
+    )
     this.elements = elements
     this.sceneDefinition = definition
     this.activeScene = definition.create()
@@ -203,12 +207,18 @@ export class Application {
     const time = request ? request.time : (timestamp - this.startTime) / 1000
 
     try {
+      request?.onStage?.('scene:update')
       this.activeScene.update(time)
+      request?.onStage?.('render:start')
       this.renderer.render(this.activeScene)
       if (request) {
+        request.onStage?.('readback:start')
         // readbackが完了するまで、このRenderTargetへの次の描画を止める。
         this.frameReadback = this.renderer.readFrame()
-          .then(request.resolve, request.reject)
+          .then((frame) => {
+            request.onStage?.('readback:done')
+            request.resolve(frame)
+          }, request.reject)
           .finally(() => { this.frameReadback = null })
       }
     } catch (error) {
@@ -222,12 +232,13 @@ export class Application {
     }
   }
 
-  private readonly captureFrame: CaptureFrame = (time) => {
+  private readonly captureFrame: CaptureFrame = (time, onStage) => {
     if (this.disposed || !this.exporting || this.pendingFrame) {
       return Promise.reject(new Error('書き出し用のフレームを要求できません。'))
     }
     return new Promise<PixelFrame>((resolve, reject) => {
-      this.pendingFrame = { time, resolve, reject }
+      onStage?.('render:queued')
+      this.pendingFrame = { time, onStage, resolve, reject }
     })
   }
 
@@ -246,6 +257,10 @@ export class Application {
 
     try {
       const settings = this.readSettings()
+      console.info('[record]', JSON.stringify({
+        event: 'start', scene: this.sceneDefinition.id, backend: this.backend,
+        ...settings, duration: this.activeScene.duration,
+      }))
       const blob = await this.exporter.export(
         settings,
         this.activeScene.duration,
